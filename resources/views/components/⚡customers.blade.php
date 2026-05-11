@@ -95,7 +95,7 @@ try{
             'email' => $customer['customerEmail'],
             'phone' => $customer['customerPhone'],
             'company' => $customer['customerCompany'],
-            'assign_To' => $customer['assignTo'] ?? null,
+            'assign_to' => $customer['assignTo'] ?? null,
             'status' => $customer['customerStatus'],
             'priority' => $customer['customerPriority'],
             'notes' => $customer['customerNotes'],

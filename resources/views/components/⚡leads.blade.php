@@ -174,7 +174,7 @@ new class extends Component {
             'email' => $validatedData['leadEmail'],
             'phone' => $validatedData['leadPhone'],
             'company' => $validatedData['leadCompany'],
-            'assign_To' => $validatedData['assignTo'] ?? null,
+            'assign_to' => $validatedData['assignTo'] ?? null,
             'status' => $validatedData['leadStatus'],
             'notes' => $validatedData['leadNotes'],
             'updated_by' => auth()->user()->id,

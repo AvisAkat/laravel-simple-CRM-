@@ -125,7 +125,7 @@ class AdminController extends Controller
         $user->phone = $request->input('phone');
         $user->role = $request->input('role');
         $user->password = Hash::make($default_password);
-        $user->status = $request->input('status');
+        $user->status = $request->input('status') ?? 'active';
         $created = $user->save();
 
         if ($created) {

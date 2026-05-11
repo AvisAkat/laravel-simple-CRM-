@@ -107,7 +107,7 @@ try{
  $this->dispatch(
                 'notify',
                 type: 'error',
-                message: $e
+                message: $e->getMessage()
             );
 return;
 }

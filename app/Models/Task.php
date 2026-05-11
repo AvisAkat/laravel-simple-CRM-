@@ -4,20 +4,34 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Customer extends Model
+class Task extends Model
 {
     protected $fillable = [
-        'full_name',
-        'email',
-        'phone',
-        'company',
-        'status',
-        'assign_To',
+        'title',
+        'description',
+        'due_dateTime',
         'priority',
-        'notes',
+        'customer',
+        'assign_To',
+        'lead',
+        'completed',
         'created_by',
         'updated_by',
     ];
+
+    protected $casts = [
+        'due_dateTime' => 'datetime',
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer');
+    }
+
+    public function lead()
+    {
+        return $this->belongsTo(Lead::class, 'customer');
+    }
 
     public function creator()
     {
@@ -28,9 +42,9 @@ class Customer extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
     public function assigned()
     {
         return $this->belongsTo(User::class, 'assign_To');
     }
-
 }

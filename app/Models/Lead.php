@@ -12,6 +12,7 @@ class Lead extends Model
         'phone',
         'company',
         'status',
+        'assign_To',
         'notes',
         'converted',
         'created_by',
@@ -26,5 +27,9 @@ class Lead extends Model
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+    public function assigned()
+    {
+        return $this->belongsTo(User::class, 'assign_To');
     }
 }

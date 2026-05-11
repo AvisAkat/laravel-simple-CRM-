@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Activity;
 
 
 class AuthController extends Controller
@@ -56,6 +57,14 @@ class AuthController extends Controller
             }
 
             // redirect the user to dashboard
+
+            Activity::create([
+                'type' => 'login',
+                'message' => 'User logged in',
+                'icon' => 'fa-sign-in-alt',
+                'user_id' => Auth::id(),
+            ]);
+
             return redirect()->route('admin.dashboard')->with('notification', [
                 'type' => 'success',
                 'message' => 'Welcome back, ' . auth()->user()->first_name . '!',

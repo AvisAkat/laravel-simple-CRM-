@@ -11,16 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('leads', function (Blueprint $table) {
+        Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            $table->string('full_name');
-            $table->string('email')->unique();
-            $table->string('phone')->nullable();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->dateTime('due_dateTime');
+            $table->dateTime('due_dateTime');
+            $table->string('priority')->default('medium');
             $table->integer('asign_To')->nullable();
-            $table->string('company')->nullable();
-            $table->string('status')->default('new');
-            $table->text('notes')->nullable();
-            $table->boolean('converted')->default(false);
+            $table->integer('customer')->nullable();
+            $table->integer('lead')->nullable();
+            $table->boolean('completed')->default(false);
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->foreignId('updated_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
@@ -32,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('leads');
+        Schema::dropIfExists('tasks');
     }
 };

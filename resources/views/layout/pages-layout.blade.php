@@ -47,6 +47,7 @@
                     <i class="fas fa-user-circle"></i>
                     <span>Profile Settings</span>
                 </a>
+                @if(auth()->user()->role != 'agent')
                 <!-- User Management Dropdown Sub-menu Section -->
                 <div class="nav-dropdown-wrapper">
                     <a href="#" class="nav-item" id="sidebarUsersLink"
@@ -58,19 +59,20 @@
                         <i class="fas fa-chevron-down submenu-caret nav-label-text"
                             style="font-size: 11px; transition: transform 0.2s ease;"></i>
                     </a>
-                    <div class="sidebar-submenu" id="usersSubmenu">
-                        <a href="#" class="nav-item sub-nav-item" data-section="users" data-view="all"
+                    <div class="sidebar-submenu {{ Route::is('admin.addUserForm') || Route::is('admin.allUsers') ? 'open' : '' }}"" id="usersSubmenu">
+                        <a href="{{ route('admin.allUsers') }}" class="nav-item sub-nav-item {{ Route::is('admin.allUsers') ? 'active' : '' }}"" data-section="users" data-view="all"
                             style="padding: 10px 14px; font-size: 13px; border-radius: 8px;">
                             <i class="fas fa-list" style="font-size: 12px; width: 18px;"></i>
                             <span class="nav-label-text">All Users</span>
                         </a>
-                        <a href="#" class="nav-item sub-nav-item" data-section="users" data-view="add"
+                        <a href="{{ route('admin.addUserForm') }}" class="nav-item sub-nav-item {{ Route::is('admin.addUserForm') ? 'active' : '' }}"" data-section="users" data-view="add"
                             style="padding: 10px 14px; font-size: 13px; border-radius: 8px;">
                             <i class="fas fa-user-plus" style="font-size: 12px; width: 18px;"></i>
                             <span class="nav-label-text">Add Users</span>
                         </a>
                     </div>
                 </div>
+                @endif
                 <a href="{{ route('admin.logout') }}" class="nav-item" id="sidebarLogoutLink"
                     onclick="event.preventDefault();document.getElementById('logout-form').submit();"
                     style="color: var(--danger); margin-top: 16px; border-top: 1px solid var(--border-color); border-radius: 0; padding-top: 16px;">
@@ -102,12 +104,7 @@
                     <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
                         <i class="fas fa-moon"></i>
                     </button>
-                    <div class="user-profile" id="topNavUserProfile" style="cursor: pointer;"
-                        title="View Profile Settings">
-                        <img id="topNavAvatar" src="https://ui-avatars.com/api/?name=Admin&background=4F46E5&color=fff"
-                            alt="User">
-                        <span id="topNavProfileName">Admin</span>
-                    </div>
+                    @livewire('admin.top-user-info')
                 </div>
             </header>
 
@@ -151,6 +148,7 @@
 
         });
     </script>
+    @stack('scripts')
 
 </body>
 

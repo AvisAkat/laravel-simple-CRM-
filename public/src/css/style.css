@@ -237,6 +237,12 @@ a.close.disabled {
     overflow-y: auto;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
     white-space: nowrap;
+    -ms-overflow-style: none;
+}
+
+.sidebar::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
 }
 
 /* Collapsible sidebar layout selectors */
@@ -867,7 +873,9 @@ body.dark-theme .priority-tag.low {
     color: #065F46;
 }
 
-.status-badge.closed {
+.status-badge.closed,
+.status-badge.inactive
+ {
     background-color: #E5E7EB;
     color: #374151;
 }
@@ -882,7 +890,8 @@ body.dark-theme .status-badge.active {
     color: #D1FAE5;
 }
 
-body.dark-theme .status-badge.closed {
+body.dark-theme .status-badge.closed,
+.status-badge.inactive {
     background-color: #44403C;
     color: #A8A29E;
 }
@@ -1174,7 +1183,8 @@ body.dark-theme .task-priority.low {
     color: #D1FAE5;
 }
 
-.task-actions {
+.task-actions,
+.all-users-actions {
     display: flex;
     gap: 8px;
 }

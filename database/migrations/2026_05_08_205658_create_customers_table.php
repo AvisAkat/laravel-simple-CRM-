@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->string('company')->nullable();
+            $table->integer('asign_To')->nullable();
             $table->string('status')->default('lead');
             $table->string('priority')->default('medium');
             $table->text('notes')->nullable();

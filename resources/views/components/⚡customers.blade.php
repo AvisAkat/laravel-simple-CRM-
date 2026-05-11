@@ -2,6 +2,10 @@
 
 use Livewire\Component;
 use App\Models\Customer;
+use App\Models\Task;
+use App\Models\User;
+use App\Models\Activity;
+use Illuminate\Support\Facades\Auth;
 
 
 new class extends Component {
@@ -9,7 +13,7 @@ new class extends Component {
     public $isCustomerEditMode = false;
     public $isShowDeleteConfirmationModal = false;
 
-    public $customerId, $customerName, $customerEmail, $customerPhone, $customerCompany, $customerStatus, $customerPriority, $customerNotes;
+    public $customerId, $customerName, $assignTo, $customerEmail, $customerPhone, $customerCompany, $customerStatus, $customerPriority, $customerNotes;
 
     //Delete Confirmation Modal
     public $deleteId, $deleteName, $deleteMethod;
@@ -46,7 +50,7 @@ new class extends Component {
 
 
         } else {
-            $this->customerId = $this->customerName = $this->customerEmail = $this->customerPhone = $this->customerCompany = $this->customerStatus = $this->customerPriority = $this->customerNotes = null;
+            $this->customerId = $this->customerName = $this->assignTo = $this->customerEmail = $this->customerPhone = $this->customerCompany = $this->customerStatus = $this->customerPriority = $this->customerNotes = null;
             $this->isCustomerEditMode = false;
         }
         $this->isCustomerModalOpen = true;
@@ -54,6 +58,7 @@ new class extends Component {
 
     public function closeCustomerModal()
     {
+        $this->customerId = $this->customerName = $this->assignTo = $this->customerEmail = $this->customerPhone = $this->customerCompany = $this->customerStatus = $this->customerPriority = $this->customerNotes = null;
         $this->isCustomerModalOpen = false;
     }
 
@@ -65,6 +70,7 @@ new class extends Component {
             'customerEmail' => 'required|email|unique:customers,email',
             'customerPhone' => 'nullable|string|max:10',
             'customerCompany' => 'nullable|string|max:255',
+            'assignTo' => 'nullable|exists:users,id',
             'customerStatus' => 'required|in:lead,active,closed',
             'customerPriority' => 'required|max:255|in:high,medium,low',
             'customerNotes' => 'nullable|string',
@@ -88,6 +94,7 @@ new class extends Component {
             'email' => $customer['customerEmail'],
             'phone' => $customer['customerPhone'],
             'company' => $customer['customerCompany'],
+            'assign_To' => $customer['assignTo'] ?? null,
             'status' => $customer['customerStatus'],
             'priority' => $customer['customerPriority'],
             'notes' => $customer['customerNotes'],
@@ -96,6 +103,14 @@ new class extends Component {
         ]);
 
         if ($created) {
+
+            Activity::create([
+                'type' => 'customer_created',
+                'message' => 'New customer added: ' . $created->full_name,
+                'icon' => 'fa-user-plus',
+                'user_id' => Auth::id(),
+            ]);
+
             $this->dispatch(
                 'notify',
                 type: 'success',
@@ -115,14 +130,32 @@ new class extends Component {
 
     public function allCustomers()
     {
-        return Customer::orderBy('created_at', 'desc')->get();
+        if (auth()->user()->role === 'agent') {
+            return Customer::where('assign_To', auth()->user()->id)->orWhere('created_by', auth()->user()->id)->orderBy('created_at', 'desc')->get();
+        } else {
+            return Customer::orderBy('created_at', 'desc')->get();
+        }
+    }
+
+    public function allAgents()
+    {
+        return User::where('role', 'agent')->orderBy('created_at', 'desc')->get();
     }
 
     public function deleteCustomer($customerId)
     {
         $customer = Customer::findOrFail($customerId);
+        $customer_related_tasks = Task::where('customer', $customerId)->where('completed', false)->get();
+
         if ($customer) {
             $customer->delete();
+
+            Activity::create([
+                'type' => 'customer_deleted',
+                'message' => 'Customer deleted: ' . $customer->full_name,
+                'icon' => 'fa-user-times',
+                'user_id' => Auth::id(),
+            ]);
 
             $this->dispatch(
                 'notify',
@@ -148,6 +181,7 @@ new class extends Component {
             'customerEmail' => 'required|email|unique:customers,email,' . $this->customerId,
             'customerPhone' => 'nullable|string|max:10',
             'customerCompany' => 'nullable|string|max:255',
+            'assignTo' => 'nullable|exists:users,id',
             'customerStatus' => 'required|in:lead,active,closed',
             'customerPriority' => 'required|max:255|in:high,medium,low',
             'customerNotes' => 'nullable|string',
@@ -172,10 +206,18 @@ new class extends Component {
                 'email' => $customer['customerEmail'],
                 'phone' => $customer['customerPhone'],
                 'company' => $customer['customerCompany'],
+                'assign_To' => $customer['assignTo'] ?? null,
                 'status' => $customer['customerStatus'],
                 'priority' => $customer['customerPriority'],
                 'notes' => $customer['customerNotes'],
                 'updated_by' => auth()->user()->id,
+            ]);
+
+            Activity::create([
+                'type' => 'customer_updated',
+                'message' => 'Customer updated: ' . $existingCustomer->full_name,
+                'icon' => 'fa-user-edit',
+                'user_id' => Auth::id(),
             ]);
 
             $this->dispatch(
@@ -199,7 +241,7 @@ new class extends Component {
 ?>
 
 <div>
-    <div class="content-section" id="customers">
+    <div id="customers">
         <div class="section-header">
             <h1 class="section-title">Customers</h1>
             <button class="btn btn-primary" id="addCustomerBtn" wire:click="openCustomerModal()">
@@ -282,29 +324,32 @@ new class extends Component {
                 @endif
                 <div class="form-group">
                     <label for="customerName">Full Name *</label>
-                    <input type="text" id="customerName" wire:model="customerName" value="{{ old('customerName') }}" placeholder="Enter full name">
+                    <input type="text" id="customerName" wire:model="customerName" value="{{ old('customerName') }}"
+                        placeholder="Enter full name">
                     @error('customerName')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>
                 <div class="form-group">
                     <label for="customerEmail">Email *</label>
-                    <input type="email" id="customerEmail" wire:model="customerEmail" value="{{ old('customerEmail') }}" placeholder="Enter email">
+                    <input type="email" id="customerEmail" wire:model="customerEmail" value="{{ old('customerEmail') }}"
+                        placeholder="Enter email">
                     @error('customerEmail')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>
                 <div class="form-group">
                     <label for="customerPhone">Phone Number</label>
-                    <input type="tel" id="customerPhone" wire:model="customerPhone" value="{{ old('customerPhone') }}" placeholder="Enter phone number">
+                    <input type="tel" id="customerPhone" wire:model="customerPhone" value="{{ old('customerPhone') }}"
+                        placeholder="Enter phone number">
                     @error('customerPhone')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>
                 <div class="form-group">
                     <label for="customerCompany">Company Name</label>
-                    <input type="text" id="customerCompany" value="{{ old('customerCompany') }}" wire:model="customerCompany"
-                        placeholder="Enter company name">
+                    <input type="text" id="customerCompany" value="{{ old('customerCompany') }}"
+                        wire:model="customerCompany" placeholder="Enter company name">
                     @error('customerCompany')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
@@ -333,6 +378,22 @@ new class extends Component {
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>
+                @if (auth()->user()->role != 'agent')
+                    <div class="form-group">
+                        <label for="assignTo">Assign Task To</label>
+                        <select id="assignTo" wire:model="assignTo">
+                            <option value="">Select ...</option>
+                            @foreach ($this->allAgents() as $agent)
+                                <option value="{{ $agent->id }}">{{ $agent->id }} .
+                                    {{ $agent->first_name . ' ' . $agent->last_name  }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('assignTo')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                @endif
                 <div class="form-group">
                     <label for="customerNotes">Notes</label>
                     <textarea id="customerNotes" wire:model="customerNotes" rows="3"

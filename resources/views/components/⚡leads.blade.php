@@ -3,6 +3,9 @@
 use Livewire\Component;
 use App\Models\Lead;
 use App\Models\Customer;
+use App\Models\User;
+use App\Models\Activity;
+use Illuminate\Support\Facades\Auth;
 
 new class extends Component {
     public $isLeadModalOpen = false;
@@ -12,7 +15,7 @@ new class extends Component {
     public $isConfirmationModal = false;
     public $confirmationTitle, $confirmationMessage, $confirmationMethod, $Id;
 
-    public $leadId, $leadName, $leadEmail, $leadPhone, $leadCompany, $leadStatus, $leadNotes;
+    public $leadId, $leadName, $assignTo, $leadEmail, $leadPhone, $leadCompany, $leadStatus, $leadNotes;
 
     //Delete Confirmation Modal
     public $deleteId, $deleteName, $deleteMethod;
@@ -64,7 +67,7 @@ new class extends Component {
             $this->isLeadEditMode = true;
 
         } else {
-            $this->leadId = $this->leadName = $this->leadEmail = $this->leadPhone = $this->leadCompany = $this->leadStatus = $this->leadNotes = null;
+            $this->leadId = $this->leadName = $this->leadEmail = $this->assignTo = $this->leadPhone = $this->leadCompany = $this->leadStatus = $this->leadNotes = null;
             $this->isLeadEditMode = false;
         }
         $this->isLeadModalOpen = true;
@@ -72,7 +75,7 @@ new class extends Component {
 
     public function closeLeadModal()
     {
-        $this->leadId = $this->leadName = $this->leadEmail = $this->leadPhone = $this->leadCompany = $this->leadStatus = $this->leadNotes = null;
+        $this->leadId = $this->leadName = $this->leadEmail = $this->assignTo = $this->leadPhone = $this->leadCompany = $this->leadStatus = $this->leadNotes = null;
         $this->isLeadModalOpen = false;
     }
 
@@ -83,6 +86,7 @@ new class extends Component {
             'leadEmail' => 'required|email|unique:leads,email',
             'leadPhone' => 'nullable|string|max:20',
             'leadCompany' => 'nullable|string|max:255',
+            'assignTo' => 'nullable|exists:users,id',
             'leadStatus' => 'required|string|in:new,contacted,qualified,proposal',
             'leadNotes' => 'nullable|string',
         ], [
@@ -99,6 +103,7 @@ new class extends Component {
             'email' => $validatedData['leadEmail'],
             'phone' => $validatedData['leadPhone'],
             'company' => $validatedData['leadCompany'],
+            'assign_To' => $validatedData['assignTo'] ?? null,
             'status' => $validatedData['leadStatus'],
             'notes' => $validatedData['leadNotes'],
             'created_by' => auth()->user()->id,
@@ -106,6 +111,13 @@ new class extends Component {
         ]);
 
         if ($created) {
+            Activity::create([
+                'type' => 'lead_created',
+                'message' => 'New lead added: ' . $created->full_name,
+                'icon' => 'fa-user-plus',
+                'user_id' => Auth::id(),
+            ]);
+
             $this->dispatch(
                 'notify',
                 type: 'success',
@@ -124,7 +136,16 @@ new class extends Component {
 
     public function allLeads()
     {
-        return Lead::where('converted', false)->orderBy('created_at', 'desc')->get();
+        if (auth()->user()->role === 'agent') {
+            return Lead::where('assign_To', auth()->user()->id)->where('converted', false)->orWhere('created_by', auth()->user()->id)->orderBy('created_at', 'desc')->get();
+        } else {
+            return Lead::where('converted', false)->orderBy('created_at', 'desc')->get();
+        }
+    }
+
+    public function allAgents()
+    {
+        return User::where('role', 'agent')->orderBy('created_at', 'desc')->get();
     }
 
     public function updateLead()
@@ -134,6 +155,7 @@ new class extends Component {
             'leadEmail' => 'required|email|unique:leads,email,' . $this->leadId,
             'leadPhone' => 'nullable|string|max:20',
             'leadCompany' => 'nullable|string|max:255',
+            'assignTo' => 'nullable|exists:users,id',
             'leadStatus' => 'required|string|in:new,contacted,qualified,proposal',
             'leadNotes' => 'nullable|string',
         ], [
@@ -152,12 +174,20 @@ new class extends Component {
             'email' => $validatedData['leadEmail'],
             'phone' => $validatedData['leadPhone'],
             'company' => $validatedData['leadCompany'],
+            'assign_To' => $validatedData['assignTo'] ?? null,
             'status' => $validatedData['leadStatus'],
             'notes' => $validatedData['leadNotes'],
             'updated_by' => auth()->user()->id,
         ]);
 
         if ($updated) {
+            Activity::create([
+                'type' => 'lead_updated',
+                'message' => 'Lead updated: ' . $lead->full_name,
+                'icon' => 'fa-user-edit',
+                'user_id' => Auth::id(),
+            ]);
+
             $this->dispatch(
                 'notify',
                 type: 'success',
@@ -179,6 +209,13 @@ new class extends Component {
         $lead = Lead::findorFail($this->deleteId);
 
         if ($lead->delete()) {
+            Activity::create([
+                'type' => 'lead_deleted',
+                'message' => 'Lead deleted: ' . $lead->full_name,
+                'icon' => 'fa-user-times',
+                'user_id' => Auth::id(),
+            ]);
+
             $this->dispatch(
                 'notify',
                 type: 'success',
@@ -222,6 +259,13 @@ new class extends Component {
         $lead->converted = true;
 
         if ($lead->save()) {
+            Activity::create([
+                'type' => 'lead_converted',
+                'message' => 'Lead converted to customer: ' . $lead->full_name,
+                'icon' => 'fa-exchange-alt',
+                'user_id' => Auth::id(),
+            ]);
+
             $this->dispatch(
                 'notify',
                 type: 'success',
@@ -245,7 +289,7 @@ new class extends Component {
 
 <div>
     <!-- Leads Section -->
-    <section class="content-section" id="leads">
+    <section id="leads">
         <div class="section-header">
             <h1 class="section-title">Leads</h1>
             <button class="btn btn-primary" id="addLeadBtn" wire:click="openLeadModal()">
@@ -344,6 +388,21 @@ new class extends Component {
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>
+                @if (auth()->user()->role != 'agent')
+                    <div class="form-group">
+                        <label for="assignTo">Assign Task To</label>
+                        <select id="assignTo" wire:model="assignTo">
+                            <option value="">Select ...</option>
+                            @foreach ($this->allAgents() as $agent)
+                                <option value="{{ $agent->id }}">{{ $agent->id }} .
+                                    {{ $agent->first_name . ' ' . $agent->last_name  }}</option>
+                            @endforeach
+                        </select>
+                        @error('assignTo')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                @endif
                 <div class="form-group">
                     <label for="leadNotes">Notes</label>
                     <textarea id="leadNotes" wire:model="leadNotes" rows="3"

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('role')->default('agent');
-            $table->string('phone');
+            $table->string('phone')->nullable();
             $table->string('avatar')->nullable();
             $table->string('status')->default('active');
             $table->rememberToken();

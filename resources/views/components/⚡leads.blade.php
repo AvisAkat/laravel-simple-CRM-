@@ -103,7 +103,7 @@ new class extends Component {
             'email' => $validatedData['leadEmail'],
             'phone' => $validatedData['leadPhone'],
             'company' => $validatedData['leadCompany'],
-            'assign_To' => $validatedData['assignTo'] ?? null,
+            'assign_to' => $validatedData['assignTo'] ?? null,
             'status' => $validatedData['leadStatus'],
             'notes' => $validatedData['leadNotes'],
             'created_by' => auth()->user()->id,
@@ -137,7 +137,7 @@ new class extends Component {
     public function allLeads()
     {
         if (auth()->user()->role === 'agent') {
-            return Lead::where('assign_To', auth()->user()->id)->where('converted', false)->orWhere('created_by', auth()->user()->id)->orderBy('created_at', 'desc')->get();
+            return Lead::where('assign_to', auth()->user()->id)->where('converted', false)->orWhere('created_by', auth()->user()->id)->orderBy('created_at', 'desc')->get();
         } else {
             return Lead::where('converted', false)->orderBy('created_at', 'desc')->get();
         }

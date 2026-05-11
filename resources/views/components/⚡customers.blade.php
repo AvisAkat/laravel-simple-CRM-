@@ -89,6 +89,7 @@ new class extends Component {
         ]);
 
         // Create customer
+try{
         $created = Customer::create([
             'full_name' => $customer['customerName'],
             'email' => $customer['customerEmail'],
@@ -101,6 +102,15 @@ new class extends Component {
             'created_by' => auth()->user()->id,
             'updated_by' => auth()->user()->id,
         ]);
+}catch(Exception $e)
+{
+ $this->dispatch(
+                'notify',
+                type: 'error',
+                message: $e
+            );
+return;
+}
 
         if ($created) {
 

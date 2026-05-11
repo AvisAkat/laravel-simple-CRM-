@@ -141,7 +141,7 @@ return;
     public function allCustomers()
     {
         if (auth()->user()->role === 'agent') {
-            return Customer::where('assign_To', auth()->user()->id)->orWhere('created_by', auth()->user()->id)->orderBy('created_at', 'desc')->get();
+            return Customer::where('assign_to', auth()->user()->id)->orWhere('created_by', auth()->user()->id)->orderBy('created_at', 'desc')->get();
         } else {
             return Customer::orderBy('created_at', 'desc')->get();
         }

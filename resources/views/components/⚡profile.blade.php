@@ -4,6 +4,7 @@ use Livewire\Component;
 use App\Models\User;
 use App\Models\Activity;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 new class extends Component {
 
@@ -14,6 +15,10 @@ new class extends Component {
     public $profileLastName;
     public $profileEmail;
     public $profilePhone;
+
+    public $oldPassword;
+    public $newPassword;
+    public $newPassword_confirmation;
 
     public function updateUserProfile($userId)
     {
@@ -72,6 +77,60 @@ new class extends Component {
         $this->profileLastName = $this->user->last_name;
         $this->profileEmail = $this->user->email;
         $this->profilePhone = $this->user->phone;
+    }
+
+    public function changePassword()
+    {
+
+        $user = User::findOrFail(auth()->id());
+
+
+        //Validate the form
+        $this->validate([
+            'oldPassword' => [
+                'required',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (!Hash::check($value, $user->password)) {
+                        // return $fail(__('Your current does not match our records'));
+                        return $fail(('Your current does not match our records'));
+                    }
+                }
+            ],
+            'newPassword' => 'required|min:5|required_with:newPassword_confirmation|same:newPassword_confirmation',
+            'newPassword_confirmation' => 'required|min:5'
+        ]);
+
+        //Update user details
+        $updated = $user->update([
+            'password' => Hash::make($this->newPassword)
+        ]);
+
+        if ($updated) {
+            // Log activity
+            Activity::create([
+                'type' => 'password_changed',
+                'message' => 'User password changed: ' . $this->user->first_name . ' ' . $this->user->last_name,
+                'icon' => 'fa-key',
+                'user_id' => Auth::id(),
+            ]);
+
+            // Clear form
+            $this->oldPassword = '';
+            $this->newPassword = '';
+            $this->newPassword_confirmation = '';
+
+            $this->dispatch(
+                'notify',
+                type: 'success',
+                message: 'Password changed successfully.'
+            );
+        } else {
+            $this->dispatch(
+                'notify',
+                type: 'error',
+                message: 'Failed to change password. Please try again.'
+            );
+        }
     }
 };
 ?>
@@ -176,6 +235,50 @@ new class extends Component {
                     <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Save Profile Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="userManagementGridWrapper" style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+            <!-- Column 1: Add New System User Form -->
+            <div class="recent-activity" id="addUserFormCard" style="padding: 24px; height: fit-content;">
+                <h2
+                    style="font-size: 18px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <i class="fas fa-user-plus" style="color: var(--indigo); margin-right: 8px;"></i>Change Password
+                </h2>
+
+                <form id="addNewUserForm" wire:submit="changePassword()"
+                    
+                    style="padding: 0; margin: 0;">
+                    <div class="form-group">
+                        <label for="oldPassword">Current Password *</label>
+                        <input type="password" id="oldPassword" wire:model="oldPassword"
+                            placeholder="Enter current password">
+                        @error('oldPassword')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password *</label>
+                        <input type="password" id="newPassword" wire:model="newPassword"
+                            placeholder="Enter new password">
+                        @error('newPassword')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password *</label>
+                        <input type="password" id="confirmPassword" wire:model="newPassword_confirmation"
+                            placeholder="Confirm new password">
+                        @error('newPassword_confirmation')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div style="text-align: center;margin-top: 15px">
+                        <button type="submit" class="btn btn-primary" style="width: 50%; justify-content: center;">
+                            <i class="fas fa-save"></i>
+                            Change Password
                         </button>
                     </div>
                 </form>

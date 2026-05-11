@@ -252,15 +252,15 @@ new class extends Component {
         <div class="search-filter-container">
             <div class="search-bar">
                 <i class="fas fa-search"></i>
-                <input type="text" id="customerSearch" placeholder="Search customers by name, email, or company...">
+                <input type="text" id="customerSearch" wire:model.live="search" placeholder="Search customers by name, email, or company...">
             </div>
             <div class="filter-select-wrapper">
                 <i class="fas fa-filter"></i>
-                <select id="customerPriorityFilter">
-                    <option value="All">All Priorities</option>
-                    <option value="High">High Priority</option>
-                    <option value="Medium">Medium Priority</option>
-                    <option value="Low">Low Priority</option>
+                <select id="customerPriorityFilter" wire:model.live="priority" >
+                    <option value="">All Priorities</option>
+                    <option value="high">High Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="low">Low Priority</option>
                 </select>
             </div>
         </div>

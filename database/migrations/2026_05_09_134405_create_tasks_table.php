@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->dateTime('due_dateTime');
-            $table->dateTime('due_dateTime');
             $table->string('priority')->default('medium');
             $table->integer('asign_To')->nullable();
             $table->integer('customer')->nullable();
